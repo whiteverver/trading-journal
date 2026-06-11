@@ -13,6 +13,7 @@ import {
   Lock,
   Mail,
   TrendingUp,
+  type LucideIcon,
 } from "lucide-react";
 
 export default function LoginPage() {
