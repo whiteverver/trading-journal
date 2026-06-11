@@ -14,11 +14,11 @@ type Screenshot = {
   image_url: string;
   created_at: string;
   trades?: {
-    symbol: string;
-    strategy: string | null;
-    side: string | null;
-    pnl: number | null;
-  } | null;
+  symbol: string;
+  strategy: string | null;
+  side: string | null;
+  pnl: number | null;
+}[] | null;
 };
 
 export default function GalleryPage() {
@@ -100,11 +100,11 @@ export default function GalleryPage() {
         <StatsCard title="Total Screenshots" value={screenshots.length} />
         <StatsCard
           title="Winning Trades"
-          value={screenshots.filter((s) => Number(s.trades?.pnl || 0) > 0).length}
+          value={screenshots.filter((s) => Number(s.trades?.[0]?.pnl || 0) > 0).length}
         />
         <StatsCard
           title="Losing Trades"
-          value={screenshots.filter((s) => Number(s.trades?.pnl || 0) < 0).length}
+          value={screenshots.filter((s) => Number(s.trades?.[0]?.pnl || 0) < 0).length}
         />
       </div>
 
@@ -132,25 +132,25 @@ export default function GalleryPage() {
               <CardContent className="p-4 space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold">
-                    {screenshot.trades?.symbol || "Unknown Trade"}
+                    {screenshot.trades?.[0]?.symbol || "Unknown Trade"}
                   </h3>
 
                   <p className="text-sm text-muted-foreground">
-                    Strategy: {screenshot.trades?.strategy || "Not added"}
+                    Strategy: {screenshot.trades?.[0]?.strategy || "Not added"}
                   </p>
 
                   <p className="text-sm text-muted-foreground">
-                    Side: {screenshot.trades?.side || "Not added"}
+                    Side: {screenshot.trades?.[0]?.side || "Not added"}
                   </p>
 
                   <p
                     className={`text-sm font-medium ${
-                      Number(screenshot.trades?.pnl || 0) >= 0
+                      Number(screenshot.trades?.[0]?.pnl || 0) >= 0
                         ? "text-green-500"
                         : "text-red-500"
                     }`}
                   >
-                    P&L: ₹{Number(screenshot.trades?.pnl || 0).toFixed(2)}
+                    P&L: ₹{Number(screenshot.trades?.[0]?.pnl || 0).toFixed(2)}
                   </p>
                 </div>
 
