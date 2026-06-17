@@ -1,14 +1,22 @@
 "use client";
 
+import ProLock from "@/components/pro-lock";
+import { useSubscription } from "@/hooks/use-subscription";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function AnalyticsPage() {
+  const { loading: subscriptionLoading, isPro } = useSubscription();
+
   const [trades, setTrades] = useState<any[]>([]);
+  const [tradesLoading, setTradesLoading] = useState(true);
 
   useEffect(() => {
+    if (subscriptionLoading) return;
+    if (!isPro) return;
+
     getTrades();
-  }, []);
+  }, [subscriptionLoading, isPro]);
 
   async function getTrades() {
     const { data, error } = await supabase
@@ -18,10 +26,37 @@ export default function AnalyticsPage() {
 
     if (error) {
       alert(error.message);
+      setTradesLoading(false);
       return;
     }
 
     setTrades(data || []);
+    setTradesLoading(false);
+  }
+
+  if (subscriptionLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050816] text-white">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!isPro) {
+    return (
+      <ProLock
+        title="Unlock Advanced Analytics"
+        description="Upgrade to TradePilot Pro to access advanced trading analytics, performance metrics, win rate, profit factor, expectancy, drawdown and strategy insights."
+      />
+    );
+  }
+
+  if (tradesLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050816] text-white">
+        Loading analytics...
+      </div>
+    );
   }
 
   const totalTrades = trades.length;
@@ -34,8 +69,7 @@ export default function AnalyticsPage() {
   const winningTrades = trades.filter((trade) => Number(trade.pnl) > 0);
   const losingTrades = trades.filter((trade) => Number(trade.pnl) < 0);
 
-  const winRate =
-    totalTrades > 0 ? winningTrades.length / totalTrades : 0;
+  const winRate = totalTrades > 0 ? winningTrades.length / totalTrades : 0;
 
   const grossProfit = winningTrades.reduce(
     (sum, trade) => sum + Number(trade.pnl || 0),
@@ -46,23 +80,17 @@ export default function AnalyticsPage() {
     losingTrades.reduce((sum, trade) => sum + Number(trade.pnl || 0), 0)
   );
 
-  const profitFactor =
-    grossLoss > 0 ? grossProfit / grossLoss : 0;
+  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : 0;
 
   const averageWin =
-    winningTrades.length > 0
-      ? grossProfit / winningTrades.length
-      : 0;
+    winningTrades.length > 0 ? grossProfit / winningTrades.length : 0;
 
   const averageLoss =
-    losingTrades.length > 0
-      ? grossLoss / losingTrades.length
-      : 0;
+    losingTrades.length > 0 ? grossLoss / losingTrades.length : 0;
 
   const lossRate = 1 - winRate;
 
-  const expectancy =
-    averageWin * winRate - averageLoss * lossRate;
+  const expectancy = averageWin * winRate - averageLoss * lossRate;
 
   const largestWin =
     winningTrades.length > 0
@@ -115,13 +143,7 @@ export default function AnalyticsPage() {
   );
 }
 
-function Card({
-  title,
-  value,
-}: {
-  title: string;
-  value: string | number;
-}) {
+function Card({ title, value }: { title: string; value: string | number }) {
   return (
     <div className="rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
       <p className="text-sm text-muted-foreground">{title}</p>
