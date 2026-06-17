@@ -23,7 +23,11 @@ export default function NewTradePage() {
   const [mistake, setMistake] = useState("");
   const [setup, setSetup] = useState("");
   const [timeframe, setTimeframe] = useState("");
-  const [marketType, setMarketType] = useState("");
+
+  const [marketType, setMarketType] = useState("NSE Equity");
+  const [instrument, setInstrument] = useState("Equity");
+  const [tradingStyle, setTradingStyle] = useState("Intraday");
+  const [broker, setBroker] = useState("Zerodha");
 
   const [loading, setLoading] = useState(false);
 
@@ -71,7 +75,11 @@ export default function NewTradePage() {
       mistake,
       setup,
       timeframe,
+
       market_type: marketType,
+      instrument,
+      trading_style: tradingStyle,
+      broker,
     });
 
     setLoading(false);
@@ -85,36 +93,112 @@ export default function NewTradePage() {
   }
 
   return (
-    <div>
-      <h1 className="mb-6 text-3xl font-bold">Add New Trade</h1>
+    <div className="min-h-screen bg-[#070A0F] p-6 text-white">
+      <div className="mb-6 rounded-3xl border border-white/10 bg-gradient-to-br from-[#0B111C] to-[#07130F] p-6">
+        <p className="text-sm font-medium text-emerald-400">
+          Indian Market Journal
+        </p>
+        <h1 className="mt-2 text-3xl font-bold">Add New Trade</h1>
+        <p className="mt-2 text-sm text-gray-400">
+          Add NSE, BSE, F&O, Nifty, Bank Nifty, MCX, Crypto or Forex trades.
+        </p>
+      </div>
 
       <form
         onSubmit={saveTrade}
-        className="space-y-6 rounded-2xl border bg-card p-6 shadow-sm"
+        className="space-y-6 rounded-3xl border border-white/10 bg-[#0B111C] p-6"
       >
         <section>
-          <h2 className="mb-4 text-xl font-semibold">Trade Details</h2>
+          <h2 className="mb-4 text-xl font-semibold text-white">
+            India Market Details
+          </h2>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <Select
+              label="Market Type"
+              value={marketType}
+              onChange={setMarketType}
+              options={[
+                "NSE Equity",
+                "BSE Equity",
+                "F&O",
+                "Nifty 50",
+                "Bank Nifty",
+                "Sensex",
+                "MCX",
+                "Currency",
+                "Crypto",
+                "Forex",
+              ]}
+            />
+
+            <Select
+              label="Instrument"
+              value={instrument}
+              onChange={setInstrument}
+              options={[
+                "Equity",
+                "Futures",
+                "Options",
+                "Commodity",
+                "Currency",
+                "Crypto",
+              ]}
+            />
+
+            <Select
+              label="Trading Style"
+              value={tradingStyle}
+              onChange={setTradingStyle}
+              options={[
+                "Intraday",
+                "Scalping",
+                "Swing",
+                "Positional",
+                "Options Buying",
+                "Options Selling",
+              ]}
+            />
+
+            <Select
+              label="Broker"
+              value={broker}
+              onChange={setBroker}
+              options={[
+                "Zerodha",
+                "Upstox",
+                "Dhan",
+                "Angel One",
+                "Groww",
+                "Fyers",
+                "Binance",
+                "Bybit",
+                "Other",
+              ]}
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-4 text-xl font-semibold text-white">
+            Trade Details
+          </h2>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             <Input
               label="Symbol"
               value={symbol}
               onChange={setSymbol}
-              placeholder="BTCUSDT"
+              placeholder="RELIANCE / NIFTY / BANKNIFTY"
               required
             />
 
-            <div>
-              <label className="mb-2 block text-sm font-medium">Side</label>
-              <select
-                value={side}
-                onChange={(e) => setSide(e.target.value)}
-                className="w-full rounded-md border bg-background px-3 py-2"
-              >
-                <option value="BUY">BUY</option>
-                <option value="SELL">SELL</option>
-              </select>
-            </div>
+            <Select
+              label="Side"
+              value={side}
+              onChange={setSide}
+              options={["BUY", "SELL"]}
+            />
 
             <Input
               label="Trade Date"
@@ -140,7 +224,7 @@ export default function NewTradePage() {
             />
 
             <Input
-              label="Quantity"
+              label="Quantity / Lots"
               type="number"
               value={quantity}
               onChange={setQuantity}
@@ -151,29 +235,22 @@ export default function NewTradePage() {
               label="Strategy"
               value={strategy}
               onChange={setStrategy}
-              placeholder="Breakout"
+              placeholder="ORB / VWAP / Breakout"
             />
 
             <Input
               label="Tag"
               value={tag}
               onChange={setTag}
-              placeholder="Momentum"
+              placeholder="Momentum / Expiry / Scalping"
             />
 
-            <div>
-              <label className="mb-2 block text-sm font-medium">P&L</label>
-              <input
-                value={pnl.toFixed(2)}
-                readOnly
-                className="w-full rounded-md border bg-muted px-3 py-2 font-semibold"
-              />
-            </div>
+            <ReadOnlyInput label="P&L" value={`₹${pnl.toFixed(2)}`} />
           </div>
         </section>
 
         <section>
-          <h2 className="mb-4 text-xl font-semibold">
+          <h2 className="mb-4 text-xl font-semibold text-white">
             Risk & Psychology
           </h2>
 
@@ -183,7 +260,7 @@ export default function NewTradePage() {
               type="number"
               value={risk}
               onChange={setRisk}
-              placeholder="100"
+              placeholder="1000"
             />
 
             <Input
@@ -191,19 +268,10 @@ export default function NewTradePage() {
               type="number"
               value={reward}
               onChange={setReward}
-              placeholder="250"
+              placeholder="2500"
             />
 
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                R:R Ratio
-              </label>
-              <input
-                value={rrRatio.toFixed(2)}
-                readOnly
-                className="w-full rounded-md border bg-muted px-3 py-2 font-semibold"
-              />
-            </div>
+            <ReadOnlyInput label="R:R Ratio" value={rrRatio.toFixed(2)} />
 
             <Select
               label="Emotion"
@@ -233,6 +301,8 @@ export default function NewTradePage() {
                 "No Stop Loss",
                 "Revenge Trade",
                 "Ignored Plan",
+                "Averaging Loss",
+                "Expiry Day Gambling",
               ]}
             />
 
@@ -249,37 +319,25 @@ export default function NewTradePage() {
               onChange={setTimeframe}
               options={["1m", "3m", "5m", "15m", "1H", "4H", "1D"]}
             />
-
-            <Select
-              label="Market Type"
-              value={marketType}
-              onChange={setMarketType}
-              options={[
-                "Crypto",
-                "Forex",
-                "Stocks",
-                "Options",
-                "Futures",
-                "Index",
-              ]}
-            />
           </div>
         </section>
 
         <section>
-          <label className="mb-2 block text-sm font-medium">Notes</label>
+          <label className="mb-2 block text-sm font-medium text-gray-300">
+            Notes
+          </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="What happened in this trade?"
-            className="min-h-32 w-full rounded-md border bg-background px-3 py-2"
+            className="min-h-32 w-full rounded-2xl border border-white/10 bg-[#070A0F] px-4 py-3 text-white outline-none placeholder:text-gray-600 focus:border-emerald-500/50"
           />
         </section>
 
         <button
           type="submit"
           disabled={loading}
-          className="rounded-md bg-blue-600 px-5 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-2xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
         >
           {loading ? "Saving..." : "Save Trade"}
         </button>
@@ -305,14 +363,32 @@ function Input({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium">{label}</label>
+      <label className="mb-2 block text-sm font-medium text-gray-300">
+        {label}
+      </label>
       <input
         type={type}
         value={value}
         required={required}
         placeholder={placeholder}
+        step={type === "number" ? "any" : undefined}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border bg-background px-3 py-2"
+        className="w-full rounded-2xl border border-white/10 bg-[#070A0F] px-4 py-3 text-white outline-none placeholder:text-gray-600 focus:border-emerald-500/50"
+      />
+    </div>
+  );
+}
+
+function ReadOnlyInput({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium text-gray-300">
+        {label}
+      </label>
+      <input
+        value={value}
+        readOnly
+        className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 font-semibold text-emerald-400 outline-none"
       />
     </div>
   );
@@ -331,15 +407,16 @@ function Select({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium">{label}</label>
+      <label className="mb-2 block text-sm font-medium text-gray-300">
+        {label}
+      </label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border bg-background px-3 py-2"
+        className="w-full rounded-2xl border border-white/10 bg-[#070A0F] px-4 py-3 text-white outline-none focus:border-emerald-500/50"
       >
-        <option value="">Select {label}</option>
         {options.map((option) => (
-          <option key={option} value={option}>
+          <option key={option} value={option} className="bg-[#070A0F]">
             {option}
           </option>
         ))}

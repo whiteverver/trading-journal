@@ -25,52 +25,14 @@ export default function EditTradePage() {
   const [mistake, setMistake] = useState("");
   const [setup, setSetup] = useState("");
   const [timeframe, setTimeframe] = useState("");
-  const [marketType, setMarketType] = useState("");
 
-  const [loading, setLoading] = useState(false);
+  const [marketType, setMarketType] = useState("NSE Equity");
+  const [instrument, setInstrument] = useState("Equity");
+  const [tradingStyle, setTradingStyle] = useState("Intraday");
+  const [broker, setBroker] = useState("Zerodha");
 
-  useEffect(() => {
-    getTrade();
-  }, []);
-
-  async function getTrade() {
-    if (!id) return;
-
-    setLoading(true);
-
-    const { data, error } = await supabase
-      .from("trades")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    setLoading(false);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    if (data) {
-      setSymbol(data.symbol || "");
-      setSide(data.side || "BUY");
-      setEntryPrice(String(data.entry_price || ""));
-      setExitPrice(String(data.exit_price || ""));
-      setQuantity(String(data.quantity || ""));
-      setStrategy(data.strategy || "");
-      setTag(data.tag || "");
-      setNotes(data.notes || "");
-      setTradeDate(data.trade_date || "");
-
-      setRisk(String(data.risk || ""));
-      setReward(String(data.reward || ""));
-      setEmotion(data.emotion || "");
-      setMistake(data.mistake || "");
-      setSetup(data.setup || "");
-      setTimeframe(data.timeframe || "");
-      setMarketType(data.market_type || "");
-    }
-  }
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const pnl =
     (Number(exitPrice || 0) - Number(entryPrice || 0)) *
@@ -82,9 +44,74 @@ export default function EditTradePage() {
       ? Number(reward) / Number(risk)
       : 0;
 
+  useEffect(() => {
+    fetchTrade();
+  }, []);
+
+  async function fetchTrade() {
+    setLoading(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert("Login required");
+      router.push("/login");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("trades")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (error) {
+      alert(error.message);
+      router.push("/trades");
+      return;
+    }
+
+    setSymbol(data.symbol || "");
+    setSide(data.side || "BUY");
+    setEntryPrice(String(data.entry_price ?? ""));
+    setExitPrice(String(data.exit_price ?? ""));
+    setQuantity(String(data.quantity ?? ""));
+    setStrategy(data.strategy || "");
+    setTag(data.tag || "");
+    setNotes(data.notes || "");
+    setTradeDate(data.trade_date || "");
+
+    setRisk(String(data.risk ?? ""));
+    setReward(String(data.reward ?? ""));
+    setEmotion(data.emotion || "");
+    setMistake(data.mistake || "");
+    setSetup(data.setup || "");
+    setTimeframe(data.timeframe || "");
+
+    setMarketType(data.market_type || "NSE Equity");
+    setInstrument(data.instrument || "Equity");
+    setTradingStyle(data.trading_style || "Intraday");
+    setBroker(data.broker || "Zerodha");
+
+    setLoading(false);
+  }
+
   async function updateTrade(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert("Login required");
+      setSaving(false);
+      return;
+    }
 
     const { error } = await supabase
       .from("trades")
@@ -98,7 +125,7 @@ export default function EditTradePage() {
         strategy,
         tag,
         notes,
-        trade_date: tradeDate,
+        trade_date: tradeDate || new Date().toISOString().split("T")[0],
 
         risk: Number(risk || 0),
         reward: Number(reward || 0),
@@ -107,11 +134,16 @@ export default function EditTradePage() {
         mistake,
         setup,
         timeframe,
-        market_type: marketType,
-      })
-      .eq("id", id);
 
-    setLoading(false);
+        market_type: marketType,
+        instrument,
+        trading_style: tradingStyle,
+        broker,
+      })
+      .eq("id", id)
+      .eq("user_id", user.id);
+
+    setSaving(false);
 
     if (error) {
       alert(error.message);
@@ -121,44 +153,128 @@ export default function EditTradePage() {
     router.push(`/trades/${id}`);
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#070A0F] p-6 text-white">
+        <p className="text-sm text-gray-400">Loading trade...</p>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h1 className="mb-6 text-3xl font-bold">Edit Trade</h1>
+    <div className="min-h-screen bg-[#070A0F] p-6 text-white">
+      <div className="mb-6 rounded-3xl border border-white/10 bg-gradient-to-br from-[#0B111C] to-[#07130F] p-6">
+        <p className="text-sm font-medium text-emerald-400">
+          Indian Market Journal
+        </p>
+        <h1 className="mt-2 text-3xl font-bold">Edit Trade</h1>
+        <p className="mt-2 text-sm text-gray-400">
+          Update NSE, BSE, F&O, Nifty, Bank Nifty, MCX, Crypto or Forex trade
+          details.
+        </p>
+      </div>
 
       <form
         onSubmit={updateTrade}
-        className="space-y-6 rounded-2xl border bg-card p-6 shadow-sm"
+        className="space-y-6 rounded-3xl border border-white/10 bg-[#0B111C] p-6"
       >
         <section>
-          <h2 className="mb-4 text-xl font-semibold">Trade Details</h2>
+          <h2 className="mb-4 text-xl font-semibold text-white">
+            India Market Details
+          </h2>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <Select
+              label="Market Type"
+              value={marketType}
+              onChange={setMarketType}
+              options={[
+                "NSE Equity",
+                "BSE Equity",
+                "F&O",
+                "Nifty 50",
+                "Bank Nifty",
+                "Sensex",
+                "MCX",
+                "Currency",
+                "Crypto",
+                "Forex",
+              ]}
+            />
+
+            <Select
+              label="Instrument"
+              value={instrument}
+              onChange={setInstrument}
+              options={[
+                "Equity",
+                "Futures",
+                "Options",
+                "Commodity",
+                "Currency",
+                "Crypto",
+              ]}
+            />
+
+            <Select
+              label="Trading Style"
+              value={tradingStyle}
+              onChange={setTradingStyle}
+              options={[
+                "Intraday",
+                "Scalping",
+                "Swing",
+                "Positional",
+                "Options Buying",
+                "Options Selling",
+              ]}
+            />
+
+            <Select
+              label="Broker"
+              value={broker}
+              onChange={setBroker}
+              options={[
+                "Zerodha",
+                "Upstox",
+                "Dhan",
+                "Angel One",
+                "Groww",
+                "Fyers",
+                "Binance",
+                "Bybit",
+                "Other",
+              ]}
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-4 text-xl font-semibold text-white">
+            Trade Details
+          </h2>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             <Input
               label="Symbol"
               value={symbol}
               onChange={setSymbol}
-              placeholder="BTCUSDT"
+              placeholder="RELIANCE / NIFTY / BANKNIFTY"
               required
             />
 
-            <div>
-              <label className="mb-2 block text-sm font-medium">Side</label>
-              <select
-                value={side}
-                onChange={(e) => setSide(e.target.value)}
-                className="w-full rounded-md border bg-background px-3 py-2"
-              >
-                <option value="BUY">BUY</option>
-                <option value="SELL">SELL</option>
-              </select>
-            </div>
+            <Select
+              label="Side"
+              value={side}
+              onChange={setSide}
+              options={["BUY", "SELL"]}
+            />
 
             <Input
               label="Trade Date"
               type="date"
               value={tradeDate}
               onChange={setTradeDate}
-              required
             />
 
             <Input
@@ -178,7 +294,7 @@ export default function EditTradePage() {
             />
 
             <Input
-              label="Quantity"
+              label="Quantity / Lots"
               type="number"
               value={quantity}
               onChange={setQuantity}
@@ -189,29 +305,22 @@ export default function EditTradePage() {
               label="Strategy"
               value={strategy}
               onChange={setStrategy}
-              placeholder="Breakout"
+              placeholder="ORB / VWAP / Breakout"
             />
 
             <Input
               label="Tag"
               value={tag}
               onChange={setTag}
-              placeholder="Momentum"
+              placeholder="Momentum / Expiry / Scalping"
             />
 
-            <div>
-              <label className="mb-2 block text-sm font-medium">P&L</label>
-              <input
-                value={pnl.toFixed(2)}
-                readOnly
-                className="w-full rounded-md border bg-muted px-3 py-2 font-semibold"
-              />
-            </div>
+            <ReadOnlyInput label="P&L" value={`₹${pnl.toFixed(2)}`} />
           </div>
         </section>
 
         <section>
-          <h2 className="mb-4 text-xl font-semibold">
+          <h2 className="mb-4 text-xl font-semibold text-white">
             Risk & Psychology
           </h2>
 
@@ -221,7 +330,7 @@ export default function EditTradePage() {
               type="number"
               value={risk}
               onChange={setRisk}
-              placeholder="100"
+              placeholder="1000"
             />
 
             <Input
@@ -229,19 +338,10 @@ export default function EditTradePage() {
               type="number"
               value={reward}
               onChange={setReward}
-              placeholder="250"
+              placeholder="2500"
             />
 
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                R:R Ratio
-              </label>
-              <input
-                value={rrRatio.toFixed(2)}
-                readOnly
-                className="w-full rounded-md border bg-muted px-3 py-2 font-semibold"
-              />
-            </div>
+            <ReadOnlyInput label="R:R Ratio" value={rrRatio.toFixed(2)} />
 
             <Select
               label="Emotion"
@@ -271,6 +371,8 @@ export default function EditTradePage() {
                 "No Stop Loss",
                 "Revenge Trade",
                 "Ignored Plan",
+                "Averaging Loss",
+                "Expiry Day Gambling",
               ]}
             />
 
@@ -287,46 +389,34 @@ export default function EditTradePage() {
               onChange={setTimeframe}
               options={["1m", "3m", "5m", "15m", "1H", "4H", "1D"]}
             />
-
-            <Select
-              label="Market Type"
-              value={marketType}
-              onChange={setMarketType}
-              options={[
-                "Crypto",
-                "Forex",
-                "Stocks",
-                "Options",
-                "Futures",
-                "Index",
-              ]}
-            />
           </div>
         </section>
 
         <section>
-          <label className="mb-2 block text-sm font-medium">Notes</label>
+          <label className="mb-2 block text-sm font-medium text-gray-300">
+            Notes
+          </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="What happened in this trade?"
-            className="min-h-32 w-full rounded-md border bg-background px-3 py-2"
+            className="min-h-32 w-full rounded-2xl border border-white/10 bg-[#070A0F] px-4 py-3 text-white outline-none placeholder:text-gray-600 focus:border-emerald-500/50"
           />
         </section>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             type="submit"
-            disabled={loading}
-            className="rounded-md bg-blue-600 px-5 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+            disabled={saving}
+            className="rounded-2xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
           >
-            {loading ? "Saving..." : "Update Trade"}
+            {saving ? "Updating..." : "Update Trade"}
           </button>
 
           <button
             type="button"
             onClick={() => router.push(`/trades/${id}`)}
-            className="rounded-md border px-5 py-2 hover:bg-muted"
+            className="rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm text-gray-300 hover:bg-white/[0.08]"
           >
             Cancel
           </button>
@@ -353,14 +443,32 @@ function Input({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium">{label}</label>
+      <label className="mb-2 block text-sm font-medium text-gray-300">
+        {label}
+      </label>
       <input
         type={type}
         value={value}
         required={required}
         placeholder={placeholder}
+        step={type === "number" ? "any" : undefined}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border bg-background px-3 py-2"
+        className="w-full rounded-2xl border border-white/10 bg-[#070A0F] px-4 py-3 text-white outline-none placeholder:text-gray-600 focus:border-emerald-500/50"
+      />
+    </div>
+  );
+}
+
+function ReadOnlyInput({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium text-gray-300">
+        {label}
+      </label>
+      <input
+        value={value}
+        readOnly
+        className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 font-semibold text-emerald-400 outline-none"
       />
     </div>
   );
@@ -379,15 +487,16 @@ function Select({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium">{label}</label>
+      <label className="mb-2 block text-sm font-medium text-gray-300">
+        {label}
+      </label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border bg-background px-3 py-2"
+        className="w-full rounded-2xl border border-white/10 bg-[#070A0F] px-4 py-3 text-white outline-none focus:border-emerald-500/50"
       >
-        <option value="">Select {label}</option>
         {options.map((option) => (
-          <option key={option} value={option}>
+          <option key={option} value={option} className="bg-[#070A0F]">
             {option}
           </option>
         ))}

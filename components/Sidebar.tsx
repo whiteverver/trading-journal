@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   PlusCircle,
@@ -17,11 +18,14 @@ import {
   BookOpen,
   Trophy,
   Image,
-  PlayCircle,
   Activity,
   Target,
+  TrendingUp,
+  Crown,
+  CreditCard,
 } from "lucide-react";
-import { TrendingUp } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
 const mainLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/trades/new", label: "Add Trade", icon: PlusCircle },
@@ -50,6 +54,7 @@ const journalLinks = [
 const accountLinks = [
   { href: "/import", label: "Import CSV", icon: Upload },
   { href: "/profile", label: "Profile", icon: User },
+  { href: "/settings/billing", label: "Billing", icon: CreditCard },
 ];
 
 export default function Sidebar() {
@@ -71,21 +76,17 @@ export default function Sidebar() {
               </div>
             </div>
           </Link>
+
+          <div className="mt-4">
+            <SubscriptionBadge />
+          </div>
         </div>
 
         <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-5">
           <NavSection title="Main" links={mainLinks} pathname={pathname} />
-          <NavSection
-            title="Analytics"
-            links={analyticsLinks}
-            pathname={pathname}
-          />
+          <NavSection title="Analytics" links={analyticsLinks} pathname={pathname} />
           <NavSection title="Growth" links={journalLinks} pathname={pathname} />
-          <NavSection
-            title="Account"
-            links={accountLinks}
-            pathname={pathname}
-          />
+          <NavSection title="Account" links={accountLinks} pathname={pathname} />
         </nav>
 
         <div className="border-t border-white/10 p-4">
@@ -100,6 +101,75 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+  );
+}
+
+function SubscriptionBadge() {
+  const [plan, setPlan] = useState<"FREE" | "PRO">("FREE");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSubscription = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          setPlan("FREE");
+          return;
+        }
+
+        const { data } = await supabase
+          .from("subscriptions")
+          .select("status")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (data?.status === "active") {
+          setPlan("PRO");
+        } else {
+          setPlan("FREE");
+        }
+      } catch (error) {
+        console.error("Subscription badge error:", error);
+        setPlan("FREE");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSubscription();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-gray-400">
+        Checking Plan...
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href="/settings/billing"
+      className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
+        plan === "PRO"
+          ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20"
+          : "border border-slate-500/30 bg-slate-500/15 text-slate-300 hover:bg-slate-500/20"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <Crown className="h-4 w-4" />
+        <span>{plan} PLAN</span>
+      </div>
+
+      <span className="text-[10px] opacity-70">
+        {plan === "PRO" ? "Active" : "Upgrade"}
+      </span>
+    </Link>
   );
 }
 
