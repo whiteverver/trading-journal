@@ -1,14 +1,22 @@
 "use client";
 
+import ProLock from "@/components/pro-lock";
+import { useSubscription } from "@/hooks/use-subscription";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function ReportsPage() {
+  const { loading: subscriptionLoading, isPro } = useSubscription();
+
   const [trades, setTrades] = useState<any[]>([]);
+  const [tradesLoading, setTradesLoading] = useState(true);
 
   useEffect(() => {
+    if (subscriptionLoading) return;
+    if (!isPro) return;
+
     getTrades();
-  }, []);
+  }, [subscriptionLoading, isPro]);
 
   async function getTrades() {
     const { data, error } = await supabase
@@ -18,10 +26,37 @@ export default function ReportsPage() {
 
     if (error) {
       alert(error.message);
+      setTradesLoading(false);
       return;
     }
 
     setTrades(data || []);
+    setTradesLoading(false);
+  }
+
+  if (subscriptionLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050816] text-white">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!isPro) {
+    return (
+      <ProLock
+        title="Unlock Advanced Reports"
+        description="Upgrade to TradePilot Pro to access monthly performance reports, profit factor, gross profit, gross loss, best day, worst day and detailed trading insights."
+      />
+    );
+  }
+
+  if (tradesLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050816] text-white">
+        Loading reports...
+      </div>
+    );
   }
 
   const totalTrades = trades.length;
@@ -55,6 +90,7 @@ export default function ReportsPage() {
     losingTrades.length > 0 ? grossLoss / losingTrades.length : 0;
 
   const dailyPnl: Record<string, number> = {};
+
   const monthlyStats: Record<
     string,
     {
@@ -124,9 +160,7 @@ export default function ReportsPage() {
       </div>
 
       <div className="rounded-xl border bg-card p-6 shadow-sm">
-        <h2 className="mb-4 text-xl font-semibold">
-          Monthly Performance
-        </h2>
+        <h2 className="mb-4 text-xl font-semibold">Monthly Performance</h2>
 
         {months.length === 0 ? (
           <p className="text-muted-foreground">No report data found.</p>
@@ -149,9 +183,7 @@ export default function ReportsPage() {
                   const data = monthlyStats[month];
 
                   const monthWinRate =
-                    data.trades > 0
-                      ? (data.wins / data.trades) * 100
-                      : 0;
+                    data.trades > 0 ? (data.wins / data.trades) * 100 : 0;
 
                   return (
                     <tr key={month} className="border-b">
@@ -159,18 +191,14 @@ export default function ReportsPage() {
 
                       <td
                         className={`p-3 font-semibold ${
-                          data.pnl >= 0
-                            ? "text-green-600"
-                            : "text-red-600"
+                          data.pnl >= 0 ? "text-green-600" : "text-red-600"
                         }`}
                       >
                         {data.pnl.toFixed(2)}
                       </td>
 
                       <td className="p-3">{data.trades}</td>
-                      <td className="p-3">
-                        {monthWinRate.toFixed(2)}%
-                      </td>
+                      <td className="p-3">{monthWinRate.toFixed(2)}%</td>
 
                       <td className="p-3 text-green-600">
                         {data.bestDay.toFixed(2)}
@@ -191,13 +219,7 @@ export default function ReportsPage() {
   );
 }
 
-function Card({
-  title,
-  value,
-}: {
-  title: string;
-  value: string | number;
-}) {
+function Card({ title, value }: { title: string; value: string | number }) {
   return (
     <div className="rounded-xl border bg-card p-5 shadow-sm">
       <p className="text-sm text-muted-foreground">{title}</p>
